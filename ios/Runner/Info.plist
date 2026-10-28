@@ -6,6 +6,8 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+<string>Location is needed to deliver orders.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Mayechi Chav</string>
 	<key>CFBundleExecutable</key>

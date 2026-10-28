@@ -4,8 +4,7 @@ class ApiConstants {
 
   // static const String baseUrl = 'http://10.0.2.2:5000/api/v1';
   // static const String baseUrl = 'http://192.168.1.7:5000/api/v1';
-  static const String baseUrl = 'http://172.27.146.134:5000/api/v1';
-
+  static const String baseUrl = 'http://192.168.1.7:5000/api/v1';
   static const Duration timeout = Duration(seconds: 20);
 
   // ---------- auth & public (no token) ----------

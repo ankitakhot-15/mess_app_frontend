@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mayechi_chav/core/utils/location_helper.dart';
 import '../../app/app_routes.dart';
 import '../../controllers/delivery/delivery_home_controller.dart';
 import '../../core/app_colors.dart';
@@ -85,7 +86,7 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
       ));
 
   Future<void> _trafficDialog(OrderModel o) async {
-    final levels = const [
+    const levels = [
       ('NORMAL', 'सामान्य'),
       ('MODERATE', 'मध्यम ट्रॅफिक (+१० मिनिटे)'),
       ('HEAVY', 'जास्त ट्रॅफिक (+२० मिनिटे)'),
@@ -109,12 +110,25 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
   List<Widget> _actions(OrderModel o) {
     if (controller.type.value != 'active') return const [];
 
-    if (_pickupStatuses.contains(o.status)) {
+    // if (_pickupStatuses.contains(o.status)) {
+    //   return [
+    //     CommonButton(
+    //       text: 'ऑर्डर उचलली – निघालो',
+    //       icon: Icons.local_shipping_rounded,
+    //       onPressed: () => controller.pickup(o),
+    //     ),
+    //   ];
+    // }
+        if (_pickupStatuses.contains(o.status)) {
       return [
         CommonButton(
           text: 'ऑर्डर उचलली – निघालो',
           icon: Icons.local_shipping_rounded,
-          onPressed: () => controller.pickup(o),
+          onPressed: () async {
+            final locationOn = await LocationHelper.ensureLocationOn();
+            if (!locationOn) return;      // message already shown
+            controller.pickup(o);         // only runs when location is ON
+          },
         ),
       ];
     }
