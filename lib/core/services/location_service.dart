@@ -1,41 +1,62 @@
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
-class LiveLocation {
+class LocationData {
   final double lat;
   final double lng;
   final String areaName;
-  const LiveLocation(this.lat, this.lng, this.areaName);
+  const LocationData({
+    required this.lat,
+    required this.lng,
+    required this.areaName,
+  });
 }
 
-/// GPS for the delivery boy. Returns null if permission / GPS is not available.
 class LocationService {
-  Future<bool> _ensurePermission() async {
-    if (!await Geolocator.isLocationServiceEnabled()) return false;
-    var p = await Geolocator.checkPermission();
-    if (p == LocationPermission.denied) p = await Geolocator.requestPermission();
-    return p == LocationPermission.always || p == LocationPermission.whileInUse;
-  }
-
-  Future<LiveLocation?> current({String fallbackArea = ''}) async {
+  /// Current GPS position + area name. Returns null if location is off,
+  /// permission is missing, or GPS times out.
+  Future<LocationData?> current({String fallbackArea = ''}) async {
     try {
-      if (!await _ensurePermission()) return null;
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+
       final pos = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(accuracy: LocationAccuracy.high));
-      var area = fallbackArea;
-      try {
-        final marks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-        if (marks.isNotEmpty) {
-          final m = marks.first;
-          final name = (m.subLocality?.isNotEmpty ?? false)
-              ? m.subLocality!
-              : ((m.locality?.isNotEmpty ?? false) ? m.locality! : '');
-          if (name.isNotEmpty) area = name;
-        }
-      } catch (_) {/* keep fallback area */}
-      return LiveLocation(pos.latitude, pos.longitude, area);
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+
+      final area =
+          await areaFrom(pos.latitude, pos.longitude, fallback: fallbackArea);
+      return LocationData(
+          lat: pos.latitude, lng: pos.longitude, areaName: area);
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Short area name, e.g. "Sarnobatwadi". Used for the API and the UI.
+  static Future<String> areaFrom(double lat, double lng,
+      {String fallback = ''}) async {
+    try {
+      final list = await placemarkFromCoordinates(lat, lng)
+          .timeout(const Duration(seconds: 8));
+      if (list.isEmpty) return fallback;
+      final p = list.first;
+      if ((p.subLocality ?? '').isNotEmpty) return p.subLocality!;
+      if ((p.locality ?? '').isNotEmpty) return p.locality!;
+      return fallback;
+    } catch (_) {
+      return fallback;
     }
   }
 }

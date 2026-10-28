@@ -5,6 +5,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/location_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/utils/app_snackbar.dart';
+import '../../core/utils/location_helper.dart';
 import '../../core/utils/storage_service.dart';
 import '../../model/order_model.dart';
 import '../../repository/delivery_repository.dart';
@@ -28,6 +29,8 @@ class DeliveryHomeController extends GetxController {
   Timer? _poll;
   Timer? _gps;
   bool _gpsWarned = false;
+  bool _locationSetupAttempted = false;
+  bool _sendingLocation = false;
 
   String get userName => StorageService.user?.fullName ?? '';
 
@@ -153,7 +156,14 @@ class DeliveryHomeController extends GetxController {
   }
 
   Future<void> _sendLocation() async {
+    if (_sendingLocation) return;
+    _sendingLocation = true;
     try {
+      if (!_locationSetupAttempted) {
+        _locationSetupAttempted = true;
+        if (!await LocationHelper.ensureLocationOn()) return;
+      }
+
       final loc = await _location
           .current(fallbackArea: StorageService.user?.areaName ?? '')
           .timeout(const Duration(seconds: 15), onTimeout: () => null);
@@ -171,6 +181,8 @@ class DeliveryHomeController extends GetxController {
         AppLogger.w('Location update failed: ${res.message}', tag: 'GPS');
     } catch (e) {
       AppLogger.w('GPS error: $e', tag: 'GPS');
+    } finally {
+      _sendingLocation = false;
     }
   }
 

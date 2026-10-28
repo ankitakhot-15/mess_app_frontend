@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mayechi_chav/core/utils/location_helper.dart';
 import '../../app/app_routes.dart';
 import '../../controllers/delivery/delivery_home_controller.dart';
 import '../../core/app_colors.dart';
 import '../../core/app_text_styles.dart';
 import '../../core/constants/app_enums.dart';
 import '../../core/responsive.dart';
+import '../../core/services/location_service.dart';
+import '../../core/utils/app_dialogs.dart';
+import '../../core/utils/location_helper.dart';
 import '../../model/order_model.dart';
-import '../../widgets/app_loader.dart';
 import '../../widgets/common_button.dart';
+import '../../widgets/live_location_card.dart';
+import '../../widgets/app_loader.dart';
 import '../../widgets/order_card.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/state_views.dart';
-import '../../core/utils/app_dialogs.dart';
 
 /// DELIVERY BOY dashboard – assigned orders + duty switch.
 class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
@@ -37,9 +39,13 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(controller.isAvailable.value ? 'तुम्ही ड्युटीवर आहात' : 'तुम्ही ड्युटी बंद केली आहे',
+                  Text(
+                      controller.isAvailable.value
+                          ? 'तुम्ही ड्युटीवर आहात'
+                          : 'तुम्ही ड्युटी बंद केली आहे',
                       style: AppTextStyles.cardTitle),
-                  Text('ऑर्डर मिळण्यासाठी ड्युटी चालू ठेवा', style: AppTextStyles.caption),
+                  Text('ऑर्डर मिळण्यासाठी ड्युटी चालू ठेवा',
+                      style: AppTextStyles.caption),
                 ],
               ),
             ),
@@ -52,12 +58,30 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
         ),
       ));
 
+  /// Live GPS of the delivery boy (refreshes every 15 s).
+  Widget _liveLocationCard() => LiveLocationCard(
+        fetch: () async {
+          final loc = await LocationService().current();
+          if (loc == null) return null;
+          return LiveLocation(
+            lat: loc.lat,
+            lng: loc.lng,
+            areaName: loc.areaName,
+            updatedAt: DateTime.now(),
+          );
+        },
+      );
+
   Widget _typeTabs() => Obx(() => Row(
         children: [
-          for (final t in const [('active', 'सध्याच्या'), ('history', 'पूर्ण झालेल्या')])
+          for (final t in const [
+            ('active', 'सध्याच्या'),
+            ('history', 'पूर्ण झालेल्या')
+          ])
             Expanded(
               child: Padding(
-                padding: EdgeInsets.only(right: t.$1 == 'active' ? Responsive.w(8) : 0),
+                padding: EdgeInsets.only(
+                    right: t.$1 == 'active' ? Responsive.w(8) : 0),
                 child: GestureDetector(
                   onTap: () => controller.setType(t.$1),
                   child: Container(
@@ -102,7 +126,9 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
     ));
     if (level == null) return;
     final note = await AppDialogs.prompt(
-        title: 'टीप (ऐच्छिक)', hint: 'उदा. रंकाळ्याजवळ जाम', confirmText: 'पाठवा');
+        title: 'टीप (ऐच्छिक)',
+        hint: 'उदा. रंकाळ्याजवळ जाम',
+        confirmText: 'पाठवा');
     if (note == null) return;
     controller.reportTraffic(o, level, note);
   }
@@ -110,24 +136,15 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
   List<Widget> _actions(OrderModel o) {
     if (controller.type.value != 'active') return const [];
 
-    // if (_pickupStatuses.contains(o.status)) {
-    //   return [
-    //     CommonButton(
-    //       text: 'ऑर्डर उचलली – निघालो',
-    //       icon: Icons.local_shipping_rounded,
-    //       onPressed: () => controller.pickup(o),
-    //     ),
-    //   ];
-    // }
-        if (_pickupStatuses.contains(o.status)) {
+    if (_pickupStatuses.contains(o.status)) {
       return [
         CommonButton(
           text: 'ऑर्डर उचलली – निघालो',
           icon: Icons.local_shipping_rounded,
           onPressed: () async {
             final locationOn = await LocationHelper.ensureLocationOn();
-            if (!locationOn) return;      // message already shown
-            controller.pickup(o);         // only runs when location is ON
+            if (!locationOn) return; // error message already shown
+            controller.pickup(o); // runs only when location is ON
           },
         ),
       ];
@@ -138,7 +155,8 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
           Padding(
             padding: EdgeInsets.only(bottom: Responsive.w(8)),
             child: Text('💵 ग्राहकाकडून ₹${o.total} घ्या (COD)',
-                style: AppTextStyles.label.copyWith(color: AppColors.primaryOrange)),
+                style: AppTextStyles.label
+                    .copyWith(color: AppColors.primaryOrange)),
           ),
         CommonButton(
           text: 'ट्रॅफिक कळवा',
@@ -165,13 +183,16 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
       appBar: AppBar(
         backgroundColor: AppColors.primaryGreen,
         title: Text(
-            controller.userName.isEmpty ? 'डिलिव्हरी' : 'नमस्कार, ${controller.userName}',
+            controller.userName.isEmpty
+                ? 'डिलिव्हरी'
+                : 'नमस्कार, ${controller.userName}',
             style: AppTextStyles.subHeading.copyWith(color: Colors.white)),
         actions: [
           IconButton(
             tooltip: 'सूचना',
             onPressed: () => Get.toNamed(AppRoutes.notifications),
-            icon: const Icon(Icons.notifications_none_rounded, color: Colors.white),
+            icon: const Icon(Icons.notifications_none_rounded,
+                color: Colors.white),
           ),
           IconButton(
             tooltip: 'लॉगआउट',
@@ -194,6 +215,8 @@ class DeliveryHomeScreen extends GetView<DeliveryHomeController> {
                   padding: EdgeInsets.all(Responsive.w(16)),
                   children: [
                     _dutyCard(),
+                    SizedBox(height: Responsive.w(14)),
+                    _liveLocationCard(),
                     SizedBox(height: Responsive.w(14)),
                     _typeTabs(),
                     SizedBox(height: Responsive.w(14)),

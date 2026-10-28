@@ -8,11 +8,15 @@ class AppLogger {
 
   static const _sensitiveKeys = {'password', 'token', 'authorization'};
 
-  static void d(String message, {String tag = 'DEBUG'}) => _log('🐛', tag, message);
-  static void i(String message, {String tag = 'INFO'}) => _log('💡', tag, message);
-  static void w(String message, {String tag = 'WARN'}) => _log('⚠️', tag, message);
+  static void d(String message, {String tag = 'DEBUG'}) =>
+      _log('🐛', tag, message);
+  static void i(String message, {String tag = 'INFO'}) =>
+      _log('💡', tag, message);
+  static void w(String message, {String tag = 'WARN'}) =>
+      _log('⚠️', tag, message);
 
-  static void e(String message, {Object? error, StackTrace? stackTrace, String tag = 'ERROR'}) {
+  static void e(String message,
+      {Object? error, StackTrace? stackTrace, String tag = 'ERROR'}) {
     _log('⛔', tag, message);
     if (error != null) _log('⛔', tag, 'cause: $error');
     if (stackTrace != null) _log('⛔', tag, stackTrace.toString());
@@ -27,7 +31,8 @@ class AppLogger {
   }
 
   static void response(String method, Uri uri, int statusCode, String body) {
-    _log('📩', 'API RESPONSE', '⬅️  $method $uri  [$statusCode]\n${_prettyText(body)}');
+    _log('📩', 'API RESPONSE',
+        '⬅️  $method $uri  [$statusCode]\n${_prettyText(body)}');
   }
 
   // ---------- helpers ----------
@@ -39,7 +44,10 @@ class AppLogger {
   static dynamic _mask(dynamic value) {
     if (value is Map) {
       return value.map((k, v) => MapEntry(
-          k, _sensitiveKeys.contains(k.toString().toLowerCase()) ? '***' : _mask(v)));
+          k,
+          _sensitiveKeys.contains(k.toString().toLowerCase())
+              ? '***'
+              : _mask(v)));
     }
     if (value is List) return value.map(_mask).toList();
     return value;
